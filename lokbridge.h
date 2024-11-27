@@ -1,4 +1,8 @@
 #include <stdlib.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
 #include "LibreOfficeKit/LibreOfficeKitInit.h"
 #include "LibreOfficeKit/LibreOfficeKit.h"
 
@@ -13,7 +17,7 @@ char* get_error(LibreOfficeKit* pThis) {
 
 void free_error(LibreOfficeKit* pThis, char* message) {
     return pThis->pClass->freeError(message);
-}
+};
 
 char* get_filter_types(LibreOfficeKit* pThis) {
     return pThis->pClass->getFilterTypes(pThis);
@@ -93,3 +97,26 @@ void reset_selection(LibreOfficeKitDocument* pThis) {
 char* get_text_selection(LibreOfficeKitDocument* pThis, const char* pMimeType) {
     return pThis->pClass->getTextSelection(pThis, pMimeType, NULL);
 };
+
+static void libre_fix_signal(int signum)
+{
+    struct sigaction st;
+
+    if (sigaction(signum, NULL, &st) < 0) {
+        goto fix_signal_error;
+    }
+
+    st.sa_flags |= SA_ONSTACK;
+
+    if (sigaction(signum, &st,  NULL) < 0) {
+        goto fix_signal_error;
+    }
+    return;
+fix_signal_error:
+        fprintf(stderr, "error fixing handler for signal %d", signum);
+}
+
+void libre_init()
+{
+    signal(SIGURG, libre_fix_signal);
+}

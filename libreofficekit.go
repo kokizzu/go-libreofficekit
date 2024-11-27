@@ -4,6 +4,7 @@ package libreofficekit
 #cgo CFLAGS: -I ./ -D LOK_USE_UNSTABLE_API
 #cgo LDFLAGS: -ldl
 #include <lokbridge.h>
+extern void libre_init();
 */
 import "C"
 import (
@@ -14,6 +15,10 @@ import (
 	"sync"
 	"unsafe"
 )
+
+func init() {
+	C.libre_init()
+}
 
 // TwipsToPixels converts given twips to pixels with given dpi
 func TwipsToPixels(twips int, dpi int) int {
@@ -48,7 +53,7 @@ func NewOffice(path string) (*Office, error) {
 
 	lokit := C.lok_init(cPath)
 	if lokit == nil {
-		return nil, fmt.Errorf("Failed to initialize LibreOfficeKit with path: '%s'", path)
+		return nil, fmt.Errorf("failed to initialize LibreOfficeKit with path: '%s'", path)
 	}
 
 	office.handle = lokit
@@ -77,7 +82,7 @@ func (office *Office) LoadDocument(path string) (*Document, error) {
 	defer C.free(unsafe.Pointer(cPath))
 	handle := C.document_load(office.handle, cPath)
 	if handle == nil {
-		return nil, fmt.Errorf("Failed to load document")
+		return nil, fmt.Errorf("failed to load document")
 	}
 	document.handle = handle
 	return document, nil
@@ -174,7 +179,7 @@ func (document *Document) SaveAs(path string, format string, filter string) erro
 	defer C.free(unsafe.Pointer(cFilter))
 	status := C.document_save(document.handle, cPath, cFormat, cFilter)
 	if status != 1 {
-		return fmt.Errorf("Failed to save document")
+		return fmt.Errorf("failed to save document")
 	}
 	return nil
 }
@@ -189,7 +194,7 @@ func (document *Document) GetView() int {
 	return int(C.get_view(document.handle))
 }
 
-// GetViews returns total number of views in document
+// GetViewsCount returns total number of views in document
 func (document *Document) GetViewsCount() int {
 	return int(C.get_views_count(document.handle))
 }
